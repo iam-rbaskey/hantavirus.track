@@ -57,7 +57,9 @@ model Outbreak {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  // Future latitude/longitude or geometry types for PostGIS can be added here
+  @@index([countryCode])
+  @@index([reportedAt])
+  @@index([sourceId])
 }
 
 model OutbreakHistory {
@@ -81,6 +83,10 @@ model News {
   source      Source   @relation(fields: [sourceId], references: [id])
 
   createdAt   DateTime @default(now())
+
+  @@index([publishedAt])
+  @@index([severity])
+  @@index([sourceId])
 }
 
 model GlobalMetrics {
@@ -102,4 +108,7 @@ model TimelineEvent {
   sourceId    String
   source      Source   @relation(fields: [sourceId], references: [id])
   createdAt   DateTime @default(now())
+
+  @@index([eventDate])
+  @@index([sourceId])
 }

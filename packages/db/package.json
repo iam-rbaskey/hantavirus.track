@@ -1,0 +1,21 @@
+{
+  "name": "@hanta/db",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.12.0"
+  },
+  "devDependencies": {
+    "@hanta/config": "workspace:*",
+    "prisma": "^5.12.0",
+    "typescript": "^5.4.0"
+  }
+}

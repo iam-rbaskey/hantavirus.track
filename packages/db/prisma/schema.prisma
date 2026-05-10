@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Country {
+  code        String     @id @db.VarChar(3) // Using ISO-3 code as primary key
+  name        String
+  population  BigInt?
+  riskLevel   String?    // e.g., 'LOW', 'MEDIUM', 'HIGH'
+  
+  outbreaks   Outbreak[]
+  createdAt   DateTime   @default(now())
+
+  // Note: Future geospatial fields (like polygons) will be added here for mapping
+}
+
+model Source {
+  id               String     @id @default(uuid())
+  name             String
+  type             String     // e.g., 'OFFICIAL', 'NEWS', 'USER_REPORTED'
+  baseUrl          String?
+  reliabilityScore Float      @default(1.0)
+  
+  outbreaks        Outbreak[]
+  news             News[]
+  globalMetrics    GlobalMetrics[]
+  timelineEvents   TimelineEvent[]
+  
+  createdAt        DateTime   @default(now())
+}
+
+model Outbreak {
+  id             String    @id @default(uuid())
+  countryCode    String
+  country        Country   @relation(fields: [countryCode], references: [code])
+  region         String?
+  
+  confirmedCases Int       @default(0)
+  suspectedCases Int       @default(0)
+  deaths         Int       @default(0)
+  recovered      Int       @default(0)
+  
+  sourceId       String
+  source         Source    @relation(fields: [sourceId], references: [id])
+  
+  history        OutbreakHistory[]
+
+  reportedAt     DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Future latitude/longitude or geometry types for PostGIS can be added here
+}
+
+model OutbreakHistory {
+  id            String   @id @default(uuid())
+  outbreakId    String
+  outbreak      Outbreak @relation(fields: [outbreakId], references: [id])
+  previousCases Int
+  newCases      Int
+  changedAt     DateTime @default(now())
+}
+
+model News {
+  id          String   @id @default(uuid())
+  title       String
+  summary     String   @db.Text
+  url         String
+  severity    String?  // e.g., 'INFO', 'WARNING', 'CRITICAL'
+  publishedAt DateTime
+  
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model GlobalMetrics {
+  id                String   @id @default(uuid())
+  totalCases        Int
+  totalDeaths       Int
+  affectedCountries Int
+  sourceId          String
+  source            Source   @relation(fields: [sourceId], references: [id])
+  reportedAt        DateTime
+  createdAt         DateTime @default(now())
+}
+
+model TimelineEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  eventDate   DateTime
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id])
+  createdAt   DateTime @default(now())
+}

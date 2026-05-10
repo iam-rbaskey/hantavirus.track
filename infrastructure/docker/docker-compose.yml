@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    # PostGIS image ensures future compatibility for geospatial features (PostGIS queries, tracking outbreaks by lat/lon)
+    image: postgis/postgis:15-3.3
+    container_name: hanta-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: hanta
+      POSTGRES_PASSWORD: hanta_password
+      POSTGRES_DB: hantavirus_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - hanta-db-data:/var/lib/postgresql/data
+
+  # Placeholders for future services (Redis, BullMQ Workers, Socket.IO, etc.) can be added here
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  hanta-db-data:

@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://postgres:Trapcode4856@@db.amdzczgdegfrojfwnvir.supabase.co:5432/postgres"
 }
 
 model Country {

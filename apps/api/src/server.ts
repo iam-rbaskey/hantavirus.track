@@ -1,18 +1,26 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { app } from './app';
+import { server, app } from './app';
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 API Server running on port ${PORT} in ${process.env.NODE_ENV} mode.`);
-});
-
-// Graceful shutdown handling
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
+const startServer = () => {
+  server.listen(PORT, () => {
+    console.log(`[Server] Core backend running on port ${PORT}`);
   });
-});
+
+  // Graceful shutdown
+  const shutdown = () => {
+    console.log('[Server] Shutting down gracefully...');
+    server.close(() => {
+      console.log('[Server] Closed remaining connections.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+};
+
+startServer();

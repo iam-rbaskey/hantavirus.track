@@ -7,10 +7,10 @@ import sourcesRoutes from './sources.routes';
 
 const router = Router();
 
-router.use('/dashboard', dashboardRoutes);
-router.use('/countries', countriesRoutes);
-router.use('/news', newsRoutes);
-router.use('/timeline', timelineRoutes);
-router.use('/sources', sourcesRoutes);
+router.use('/v1/dashboard', dashboardRoutes);
+router.use('/v1/countries', countriesRoutes);
+router.use('/v1/news', newsRoutes);
+router.use('/v1/timeline', timelineRoutes);
+router.use('/v1/sources', sourcesRoutes);
 
 export default router;

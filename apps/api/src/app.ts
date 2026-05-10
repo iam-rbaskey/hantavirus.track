@@ -1,26 +1,34 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { createServer } from 'http';
 import { httpLogger } from './middlewares/logger.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { metricsMiddleware, metricsRoute } from './middlewares/metrics.middleware';
+import { initSockets } from './sockets';
 import routes from './routes';
+import healthRoutes from './health/health.routes';
 
 export const app = express();
+export const server = createServer(app);
+
+// Initialize Socket.IO Foundation
+initSockets(server);
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
+// Metrics and request logging
+app.use(metricsMiddleware);
 app.use(httpLogger);
 
-// Healthcheck
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// System endpoints
+app.use('/health', healthRoutes);
+app.get('/metrics', metricsRoute);
 
-// Mount modular API routes
+// Mount versioned modular API routes
 app.use('/api', routes);
 
 // Error handling

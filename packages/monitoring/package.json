@@ -1,0 +1,17 @@
+{
+  "name": "@hanta/monitoring",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "prom-client": "^15.1.0"
+  },
+  "devDependencies": {
+    "@hanta/config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

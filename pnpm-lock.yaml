@@ -112,6 +112,9 @@ importers:
       axios:
         specifier: ^1.6.8
         version: 1.16.0
+      bullmq:
+        specifier: ^4.12.5
+        version: 4.18.3
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1

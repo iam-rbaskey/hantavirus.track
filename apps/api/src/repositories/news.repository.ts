@@ -1,5 +1,4 @@
-import { prisma } from '@hanta/db';
-import { Prisma } from '@prisma/client';
+import { prisma, Prisma } from '@hanta/db';
 
 export class NewsRepository {
   public async getNews(skip: number, take: number, severity?: string, sourceId?: string) {

@@ -14,6 +14,7 @@
     "@hanta/queue": "workspace:^",
     "@hanta/redis": "workspace:^",
     "axios": "^1.6.8",
+    "bullmq": "^4.12.5",
     "dotenv": "^16.4.5",
     "node-cron": "^4.2.1",
     "pino": "^10.3.1",

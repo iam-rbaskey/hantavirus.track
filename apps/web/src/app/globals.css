@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #00D2FF;
+  --color-secondary: #7B61FF;
+  --color-danger: #FF4D4D;
+  --color-warning: #FFB547;
+  --color-success: #3DDC97;
+  
+  --color-bg-primary: #050816;
+  --color-bg-secondary: #0B0B0F;
+  --color-bg-sidebar: #09090D;
+  --color-bg-card: #111111;
+  --color-bg-topbar: #0C0C11;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A1A1AA;
+  --color-border: rgba(255, 255, 255, 0.05);
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  background-image: linear-gradient(135deg, #050816 0%, #0B1020 50%, #111827 100%);
+  min-height: 100vh;
+  letter-spacing: -0.01em;
+}
+
+.mask-image-fade {
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}

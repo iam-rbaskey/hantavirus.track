@@ -53,7 +53,8 @@ async function runAllIngestionJobs() {
   logger.info('Executing Job 3: News...');
   const newsRaw = await new NewsCollector().fetch();
   for (const raw of newsRaw) {
-    const normalizedNews = HantaOneNormalizers.normalizeNews(raw, sourceId);
+    const dynamicSourceId = await dbService.getOrCreateSource(raw.source || 'Aggregator', 'NEWS', 'https://hantavirus.one');
+    const normalizedNews = HantaOneNormalizers.normalizeNews(raw, dynamicSourceId);
     // Fallback valid URL if API gives broken URLs to pass zod
     if (!normalizedNews.url.startsWith('http')) normalizedNews.url = 'https://hantavirus.one'; 
     const validNews = Validators.validate(NewsSchema, normalizedNews, 'News');
@@ -64,7 +65,8 @@ async function runAllIngestionJobs() {
   logger.info('Executing Job 4: Timeline...');
   const timelineRaw = await new TimelineCollector().fetch();
   for (const raw of timelineRaw) {
-    const normalizedTimeline = HantaOneNormalizers.normalizeTimeline(raw, sourceId);
+    const dynamicSourceId = await dbService.getOrCreateSource(raw.source_label || 'Aggregator', 'OFFICIAL', raw.source_url || 'https://hantavirus.one');
+    const normalizedTimeline = HantaOneNormalizers.normalizeTimeline(raw, dynamicSourceId);
     const validTimeline = Validators.validate(TimelineSchema, normalizedTimeline, 'TimelineEvent');
     if (validTimeline) await dbService.insertTimeline(validTimeline);
   }

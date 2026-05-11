@@ -16,10 +16,12 @@ services:
       - hanta-db-data:/var/lib/postgresql/data
 
   # Placeholders for future services (Redis, BullMQ Workers, Socket.IO, etc.) can be added here
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
+  redis:
+    image: redis:7-alpine
+    container_name: hanta-redis
+    restart: always
+    ports:
+      - "6379:6379"
 
 volumes:
   hanta-db-data:

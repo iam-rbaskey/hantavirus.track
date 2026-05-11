@@ -1,5 +1,9 @@
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
+// Extract element type from the array returned by a repository method
+type TopCountry = Awaited<ReturnType<DashboardRepository['getTopAffectedCountries']>>[number];
+type RecentNewsItem = Awaited<ReturnType<DashboardRepository['getRecentNews']>>[number];
+
 export class DashboardService {
   private repository: DashboardRepository;
 
@@ -16,13 +20,13 @@ export class DashboardService {
 
     return {
       global: globalMetrics,
-      topCountries: topCountries.map(o => ({
+      topCountries: topCountries.map((o: TopCountry) => ({
         country: o.country.name,
         code: o.countryCode,
         cases: o.confirmedCases,
         deaths: o.deaths
       })),
-      recentNews: recentNews.map(n => ({
+      recentNews: recentNews.map((n: RecentNewsItem) => ({
         title: n.title,
         url: n.url,
         publishedAt: n.publishedAt,

@@ -1,4 +1,5 @@
-import { prisma, Prisma } from '@hanta/db';
+import { prisma } from '@hanta/db';
+import type { Prisma } from '@prisma/client';
 
 export class TimelineRepository {
   public async getTimeline(skip: number, take: number) {

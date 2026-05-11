@@ -146,4 +146,4 @@ This infrastructure is engineered specifically to be deployed on **Render** (via
    - A Managed Redis Cluster.
 
 ---
-*Developed with 🖤 for Global Epidemiological Preparedness.*
+*Developed by Riyanshu Baskey [Im-rbaskey](https://github.com/iam-rbaskey) 🖤 for Global Epidemiological Preparedness.*

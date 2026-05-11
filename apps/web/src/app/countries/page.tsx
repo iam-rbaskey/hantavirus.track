@@ -1,66 +1,70 @@
 'use client';
-import { useState } from 'react';
 import { useCountries } from '@/hooks/useCountries';
-import Link from 'next/link';
+import { CountryCard } from '@/components/CountryCard';
+import { PageLoader, ErrorState, EmptyState } from '@/components/ui/States';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { Search } from 'lucide-react';
+import type { CountryOutbreak } from '@/types';
 
 export default function CountriesPage() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useCountries(page);
+  const { data, isLoading, error } = useCountries();
+  const [search, setSearch] = useState('');
+
+  if (isLoading) return <PageLoader />;
+  if (error)     return <ErrorState />;
+
+  const countries = data?.data ?? [];
+
+  const hotspots: CountryOutbreak[] = countries.map((c) => ({
+    country: c.name,
+    code: c.code,
+    cases:  c.outbreaks?.[0]?.confirmedCases ?? 0,
+    deaths: c.outbreaks?.[0]?.deaths ?? 0,
+  }));
+
+  const filtered = hotspots.filter(
+    (c) => c.country.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const sorted = [...filtered].sort((a, b) => b.cases - a.cases);
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
-      <header className="pb-6 border-b border-white/10">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Countries Intelligence Explorer</h1>
-        <p className="text-white/60 text-sm mt-2 uppercase tracking-widest">Global Heatmap & Outbreak Statistics</p>
-      </header>
+    <div className="space-y-5 pb-10">
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Filter by country or code..."
+          className="w-full glass border border-white/[0.07] rounded-2xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-text-muted focus:outline-none focus:border-white/20 transition-colors"
+        />
+      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center p-20 text-primary animate-pulse tracking-widest uppercase">Connecting to Database...</div>
+      {/* Stats bar */}
+      <div className="flex items-center gap-4 text-xs text-text-muted">
+        <span>{sorted.length} countries tracked</span>
+        <span className="text-text-muted/30">·</span>
+        <span>{sorted.filter(c => c.cases > 0).length} with active cases</span>
+      </div>
+
+      {/* Country grid */}
+      {sorted.length === 0 ? (
+        <EmptyState label="No countries match your search" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-          {data?.data.map((c) => {
-            const latestOutbreak = c.outbreaks[0] || { confirmedCases: 0, deaths: 0 };
-            return (
-              <Link key={c.code} href={`/country/${c.code}`} className="block p-5 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 transition group">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-xl group-hover:text-primary transition-colors">{c.name}</h3>
-                  <span className="text-xs font-mono px-2 py-1 bg-black/50 rounded border border-white/5">{c.code}</span>
-                </div>
-                
-                <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-widest opacity-60">Cases</span>
-                    <p className="font-bold text-warning text-xl">{latestOutbreak.confirmedCases}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase tracking-widest opacity-60">Deaths</span>
-                    <p className="font-bold text-danger text-xl">{latestOutbreak.deaths}</p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Basic Pagination Controls */}
-      {data?.meta && (
-        <div className="flex justify-center gap-4 pt-8">
-          <button 
-            disabled={page === 1} 
-            onClick={() => setPage(p => p - 1)}
-            className="px-6 py-2 border border-white/20 rounded disabled:opacity-50 hover:bg-white/5 transition"
-          >
-            PREVIOUS
-          </button>
-          <span className="flex items-center px-4 font-mono">PAGE {page} OF {data.meta.totalPages}</span>
-          <button 
-            disabled={page === data.meta.totalPages} 
-            onClick={() => setPage(p => p + 1)}
-            className="px-6 py-2 border border-white/20 rounded disabled:opacity-50 hover:bg-white/5 transition"
-          >
-            NEXT
-          </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+          {sorted.map((c, i) => (
+            <motion.div
+              key={c.code}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.03, 0.4) }}
+            >
+              <CountryCard country={c} rank={i + 1} />
+            </motion.div>
+          ))}
         </div>
       )}
     </div>

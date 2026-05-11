@@ -1,4 +1,5 @@
-import { apiClient, ApiResponse } from '../utils/api';
+import { apiClient } from '@/utils/api';
+import type { ApiResponse } from '@/types/api';
 
 export interface TimelineEvent {
   id: string;

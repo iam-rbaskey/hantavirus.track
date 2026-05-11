@@ -1,12 +1,13 @@
-import { apiClient, ApiResponse } from '../utils/api';
+import { apiClient } from '@/utils/api';
+import type { ApiResponse } from '@/types/api';
+import type { Country, CountriesResponse } from '@/types';
 
-export interface CountryData {
-  code: string;
-  name: string;
-  outbreaks: Array<{ confirmedCases: number; deaths: number; reportedAt: string }>;
-}
+export const fetchCountries = async (): Promise<CountriesResponse> => {
+  const { data } = await apiClient.get<ApiResponse<Country[]>>('/countries');
+  return { data: data.data, meta: data.meta };
+};
 
-export const fetchCountries = async (page = 1, limit = 50): Promise<ApiResponse<CountryData[]>> => {
-  const { data } = await apiClient.get<ApiResponse<CountryData[]>>(`/countries?page=${page}&limit=${limit}`);
-  return data;
+export const fetchCountryByCode = async (code: string): Promise<Country> => {
+  const { data } = await apiClient.get<ApiResponse<Country>>(`/countries/${code}`);
+  return data.data;
 };

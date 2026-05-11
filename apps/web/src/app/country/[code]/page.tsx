@@ -1,56 +1,120 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient, ApiResponse } from '@/utils/api';
+import { use } from 'react';
+import { useCountry } from '@/hooks/useCountries';
+import { PageLoader, ErrorState } from '@/components/ui/States';
+import { getSeverity } from '@/types';
+import { ArrowLeft, Biohazard, Activity, Calendar } from 'lucide-react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
-export default function CountryPage({ params }: { params: { code: string } }) {
-  const { code } = params;
+const SEVERITY_CONFIG = {
+  critical: { label: 'Critical',  color: 'text-danger',    bg: 'bg-danger/10',   border: 'border-danger/25' },
+  high:     { label: 'High',      color: 'text-warning',   bg: 'bg-warning/10',  border: 'border-warning/25' },
+  medium:   { label: 'Moderate',  color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/25' },
+  low:      { label: 'Active',    color: 'text-white',     bg: 'bg-white/[0.05]', border: 'border-white/15' },
+  none:     { label: 'No Cases',  color: 'text-success',   bg: 'bg-success/10',  border: 'border-success/25' },
+};
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['country', code],
-    queryFn: async () => {
-      const res = await apiClient.get<ApiResponse<any>>(`/countries/${code}`);
-      return res.data.data;
-    }
-  });
+export default function CountryDetailPage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = use(params);
+  const { data: country, isLoading, error } = useCountry(code.toUpperCase());
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse">Loading Country Data...</div>;
-  if (!data) return <div className="p-20 text-center text-danger">Country not found.</div>;
+  if (isLoading) return <PageLoader />;
+  if (error || !country) return <ErrorState message={`No data found for country: ${code.toUpperCase()}`} />;
+
+  const latestOutbreak = country.outbreaks?.[0];
+  const totalCases  = latestOutbreak?.confirmedCases ?? 0;
+  const totalDeaths = latestOutbreak?.deaths ?? 0;
+  const severity    = getSeverity(totalCases);
+  const cfg         = SEVERITY_CONFIG[severity];
+  const cfr = totalCases > 0 ? ((totalDeaths / totalCases) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto space-y-8">
-      <header className="pb-6 border-b border-white/10 flex justify-between items-center">
-        <div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">{data.name}</h1>
-          <p className="text-white/60 text-sm mt-2 font-mono uppercase tracking-widest">{data.code} | Risk: {data.riskLevel || 'UNKNOWN'}</p>
-        </div>
-      </header>
+    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+      {/* Back */}
+      <Link href="/countries" className="inline-flex items-center gap-2 text-text-secondary hover:text-white text-sm transition-colors">
+        <ArrowLeft className="w-4 h-4" />
+        Back to Countries
+      </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
-           <h2 className="text-sm uppercase tracking-widest opacity-60 mb-2">Total Confirmed Cases</h2>
-           <p className="text-5xl font-bold text-warning">{data.outbreaks[0]?.confirmedCases || 0}</p>
+      {/* Header card */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-2xl glass-card border ${cfg.border} p-6`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-text-muted text-xs uppercase tracking-wider mb-1">{country.region ?? 'Global'}</p>
+            <h1 className="text-white text-2xl font-black">{country.name}</h1>
+            <p className="text-text-muted font-mono text-sm mt-0.5">{country.code}</p>
+          </div>
+          <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl border ${cfg.color} ${cfg.bg} ${cfg.border}`}>
+            {cfg.label}
+          </span>
         </div>
-        <div className="p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md">
-           <h2 className="text-sm uppercase tracking-widest opacity-60 mb-2">Total Deaths</h2>
-           <p className="text-5xl font-bold text-danger">{data.outbreaks[0]?.deaths || 0}</p>
-        </div>
+      </motion.div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Confirmed', value: totalCases,  color: 'text-warning', icon: <Activity className="w-4 h-4" /> },
+          { label: 'Deaths',    value: totalDeaths,  color: 'text-danger',  icon: <Biohazard className="w-4 h-4" /> },
+          { label: 'CFR',       value: `${cfr}%`,    color: 'text-text-secondary', icon: <Calendar className="w-4 h-4" /> },
+        ].map((m, i) => (
+          <motion.div
+            key={m.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="rounded-2xl glass-card border border-white/[0.07] p-4 text-center"
+          >
+            <div className="flex justify-center mb-2 text-text-muted">{m.icon}</div>
+            <p suppressHydrationWarning className={`text-2xl font-black ${m.color}`}>
+              {typeof m.value === 'number' ? m.value.toLocaleString() : m.value}
+            </p>
+            <p className="text-text-muted text-[10px] uppercase tracking-wider mt-1">{m.label}</p>
+          </motion.div>
+        ))}
       </div>
 
-      <div className="p-6 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md mt-6">
-         <h2 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Historical Outbreak Records</h2>
-         <ul className="space-y-4">
-           {data.outbreaks.map((outbreak: any, index: number) => (
-             <li key={index} className="flex justify-between p-4 bg-black/20 rounded border border-white/5">
-               <span className="font-mono text-sm opacity-80">{new Date(outbreak.reportedAt).toLocaleDateString()}</span>
-               <div className="flex gap-8">
-                  <span className="text-warning font-bold">{outbreak.confirmedCases} cases</span>
-                  <span className="text-danger font-bold">{outbreak.deaths} deaths</span>
-               </div>
-             </li>
-           ))}
-           {data.outbreaks.length === 0 && <p className="text-white/40 italic">No historical records available.</p>}
-         </ul>
-      </div>
+      {/* Outbreak history */}
+      {country.outbreaks && country.outbreaks.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="rounded-2xl glass-card border border-white/[0.07] overflow-hidden"
+        >
+          <div className="px-5 py-4 border-b border-white/[0.05]">
+            <h2 className="text-white font-semibold text-sm">Outbreak History</h2>
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {country.outbreaks.map((ob) => (
+              <div key={ob.id} className="px-5 py-4 flex items-center justify-between gap-4">
+                <div>
+                  <span suppressHydrationWarning className="text-text-muted text-xs font-mono">
+                    {new Date(ob.reportedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <p className={`text-xs mt-0.5 uppercase font-bold tracking-wider ${ob.status === 'ACTIVE' ? 'text-warning' : 'text-success'}`}>
+                    {ob.status}
+                  </p>
+                </div>
+                <div className="flex gap-6 text-right">
+                  <div>
+                    <p className="text-[10px] text-text-muted">Cases</p>
+                    <p suppressHydrationWarning className="text-warning font-bold text-sm">{ob.confirmedCases.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-text-muted">Deaths</p>
+                    <p suppressHydrationWarning className="text-danger font-bold text-sm">{ob.deaths.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

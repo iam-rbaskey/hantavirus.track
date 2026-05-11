@@ -4,35 +4,42 @@ import { motion } from 'framer-motion';
 
 export const NewsTicker = () => {
   const { data } = useDashboard();
-  
-  if (!data?.recentNews || data.recentNews.length === 0) return null;
+  const news = data?.recentNews;
+  if (!news || news.length === 0) return null;
+
+  const items = [...news, ...news, ...news];
 
   return (
-    <div className="w-full bg-bg-secondary/80 backdrop-blur-md text-white py-2 overflow-hidden flex items-center border-b border-border/50 relative z-40">
-       <span className="bg-bg-secondary px-6 font-bold uppercase tracking-widest text-xs z-10 h-full absolute left-0 flex items-center border-r border-border/50 text-danger shadow-[10px_0_20px_rgba(11,11,15,0.9)]">
-         <div className="h-1.5 w-1.5 bg-danger rounded-full mr-2 animate-pulse shadow-[0_0_8px_rgba(255,77,77,0.8)]" />
-         ALERT
-       </span>
-       <div className="whitespace-nowrap flex pl-32 w-full overflow-hidden mask-image-fade">
-         <motion.div
-           animate={{ x: [0, -2000] }}
-           transition={{ ease: "linear", duration: 40, repeat: Infinity }}
-           className="flex gap-12"
-         >
-           {data.recentNews.map((news, i) => (
-             <span key={i} className="text-xs font-medium tracking-wide">
-               <span className="text-primary/70 mr-2 uppercase tracking-widest font-mono text-[10px] border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5">{news.source}</span>
-               <span className="text-white/80">{news.title}</span>
-             </span>
-           ))}
-           {data.recentNews.map((news, i) => (
-             <span key={`dup-${i}`} className="text-xs font-medium tracking-wide">
-               <span className="text-primary/70 mr-2 uppercase tracking-widest font-mono text-[10px] border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5">{news.source}</span>
-               <span className="text-white/80">{news.title}</span>
-             </span>
-           ))}
-         </motion.div>
-       </div>
+    <div className="w-full h-9 flex items-center overflow-hidden border-b border-white/[0.05] glass-dark relative shrink-0">
+      {/* Breaking label */}
+      <div className="absolute left-0 top-0 h-full flex items-center px-4 bg-danger/20 border-r border-danger/30 z-10 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-danger">Breaking</span>
+        </div>
+      </div>
+
+      {/* Scrolling track */}
+      <div className="flex-1 ml-28 overflow-hidden ticker-mask">
+        <motion.div
+          className="flex gap-10 items-center whitespace-nowrap"
+          animate={{ x: ['0%', '-33.33%'] }}
+          transition={{ duration: 40, ease: 'linear', repeat: Infinity }}
+        >
+          {items.map((item, i) => (
+            <a
+              key={i}
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 text-xs text-text-secondary hover:text-white transition-colors shrink-0"
+            >
+              <span className="text-danger/60 font-mono text-[10px]">●</span>
+              <span className="truncate max-w-[400px]">{item.title}</span>
+            </a>
+          ))}
+        </motion.div>
+      </div>
     </div>
   );
 };

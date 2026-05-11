@@ -1,173 +1,181 @@
 'use client';
-
+import { Activity, Biohazard, Globe, Wifi } from 'lucide-react';
 import { useDashboard } from '@/hooks/useDashboard';
-import { GlobalMetricsCard } from '@/components/GlobalMetricsCard';
-import { OutbreakMap } from '@/components/OutbreakMap';
-import { TrendChart } from '@/components/TrendChart';
 import { useSocket } from '@/providers/SocketProvider';
+import { MetricCard } from '@/components/MetricCard';
+import { WorldMap } from '@/components/WorldMap';
+import { PageLoader, ErrorState } from '@/components/ui/States';
 import { motion } from 'framer-motion';
 
-export default function Dashboard() {
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show:   (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.4 } }),
+};
+
+const SectionHeader = ({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) => (
+  <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
+    <h2 className="text-white font-semibold text-sm">{children}</h2>
+    {right}
+  </div>
+);
+
+export default function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
   const { isConnected } = useSocket();
 
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="relative h-12 w-12 rounded-xl border border-primary/30 flex items-center justify-center bg-primary/10 overflow-hidden">
-        <div className="absolute inset-0 bg-primary/20 animate-pulse" />
-        <div className="h-3 w-3 bg-primary rounded-full shadow-[0_0_15px_rgba(0,210,255,0.8)] animate-ping" />
-      </div>
-      <span className="text-primary font-medium tracking-widest uppercase text-sm">Initializing uplink...</span>
-    </div>
-  );
+  if (isLoading) return <PageLoader />;
+  if (error)     return <ErrorState message="Could not reach the intelligence backend." />;
 
-  if (error) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-danger">
-      <div className="h-12 w-12 rounded-xl border border-danger/50 flex items-center justify-center bg-danger/10">
-        <span className="text-2xl font-bold">!</span>
-      </div>
-      <span className="font-bold tracking-widest uppercase text-sm">CRITICAL UPLINK FAILURE</span>
-    </div>
-  );
+  const g            = data?.global;
+  const topCountries = data?.topCountries ?? [];
+  const recentNews   = data?.recentNews ?? [];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      {/* Global Metrics Row */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GlobalMetricsCard 
-          title="Confirmed Cases" 
-          value={data?.global.totalCases || 0} 
-          type="warning" 
-          trend="+12% vs last week"
-        />
-        <GlobalMetricsCard 
-          title="Total Deaths" 
-          value={data?.global.totalDeaths || 0} 
-          type="danger" 
-          trend="+5% vs last week"
-        />
-        <GlobalMetricsCard 
-          title="Affected Countries" 
-          value={data?.global.affectedCountries || 0} 
-          type="primary" 
-          trend="No change"
-        />
-        <GlobalMetricsCard 
-          title="System Status" 
-          value={isConnected ? "LIVE" : "OFFLINE"} 
-          type={isConnected ? "success" : "danger"}
-          isStatus={true}
-          trend={`Last sync: ${new Date(data?.global.reportedAt || Date.now()).toLocaleTimeString()}`}
-        />
+    <div className="space-y-5 pb-10">
+
+      {/* ── Metric cards ─────────────────────────────────────── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {[
+          { title: 'Confirmed Cases',    value: g?.totalCases ?? 0,       color: 'warning' as const, icon: <Activity className="w-4 h-4" /> },
+          { title: 'Total Deaths',       value: g?.totalDeaths ?? 0,      color: 'danger' as const,  icon: <Biohazard className="w-4 h-4" /> },
+          { title: 'Affected Countries', value: g?.affectedCountries ?? 0, color: 'accent' as const,  icon: <Globe className="w-4 h-4" /> },
+          {
+            title: 'System Status',
+            value: isConnected ? 'LIVE' : 'OFFLINE',
+            color: isConnected ? 'success' as const : 'danger' as const,
+            icon: <Wifi className="w-4 h-4" />,
+            trend: g?.reportedAt ? `Updated ${new Date(g.reportedAt).toLocaleTimeString()}` : undefined,
+          },
+        ].map((m, i) => (
+          <motion.div key={m.title} custom={i} initial="hidden" animate="show" variants={fadeUp}>
+            <MetricCard {...m} />
+          </motion.div>
+        ))}
       </section>
 
-      {/* Main Intelligence Grid */}
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
-        {/* Mapbox Geospatial Intelligence */}
-        <div className="xl:col-span-2 rounded-2xl border border-border bg-bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-          <div className="px-6 py-4 border-b border-border/50 bg-bg-secondary/50 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,210,255,0.8)]"></span>
-              Global Outbreak Distribution
-            </h2>
-            <div className="flex gap-2">
-              <span className="px-2 py-1 text-[10px] uppercase tracking-widest border border-border rounded bg-bg-card text-text-secondary">Heatmap</span>
-              <span className="px-2 py-1 text-[10px] uppercase tracking-widest border border-primary/30 rounded bg-primary/10 text-primary">Clusters</span>
+      {/* ── Full-width outbreak map ──────────────────────────── */}
+      <motion.section
+        className="rounded-2xl glass-card border border-white/[0.07] overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <SectionHeader
+          right={
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-warning" />
+                <span className="text-[10px] text-text-muted">Cases</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-danger" />
+                <span className="text-[10px] text-text-muted">Deaths</span>
+              </div>
+              <span className="text-[10px] font-mono text-text-muted border border-white/[0.06] rounded-lg px-2 py-0.5 glass-sm uppercase tracking-wider">
+                All Countries
+              </span>
             </div>
-          </div>
-          <div className="flex-1 min-h-[400px] relative">
-            <OutbreakMap />
-          </div>
-        </div>
+          }
+        >
+          <span className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
+            Global Outbreak Intelligence Map
+          </span>
+        </SectionHeader>
 
-        {/* Intelligence Feed */}
-        <div className="rounded-2xl border border-border bg-bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-          <div className="px-6 py-4 border-b border-border/50 bg-bg-secondary/50 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-danger uppercase tracking-widest flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-danger animate-pulse shadow-[0_0_8px_rgba(255,77,77,0.8)]"></span>
+        <div className="h-[340px] md:h-[500px] lg:h-[560px]">
+          <WorldMap />
+        </div>
+      </motion.section>
+
+      {/* ── Intelligence Feed + Severity Index ──────────────── */}
+      <section className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-5">
+
+        {/* Live Intelligence Feed */}
+        <motion.div
+          className="xl:col-span-2 rounded-2xl glass-card border border-white/[0.07] overflow-hidden flex flex-col"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <SectionHeader
+            right={
+              <span className="text-[10px] px-2 py-0.5 rounded-lg glass-sm border border-white/[0.06] text-text-muted uppercase tracking-wider">
+                Auto-sync
+              </span>
+            }
+          >
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse" />
               Live Intelligence
-            </h2>
-            <span className="px-2 py-1 text-[10px] uppercase tracking-widest border border-border rounded bg-bg-card text-text-secondary">Auto-sync</span>
-          </div>
-          <div className="flex-1 p-0 overflow-y-auto max-h-[400px]">
-             <ul className="divide-y divide-border/50">
-               {data?.recentNews.map((n, i) => (
-                 <motion.li 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    key={i} 
-                    className="p-5 hover:bg-white/[0.02] transition-colors group"
-                  >
-                   <div className="flex items-center justify-between mb-3">
-                     <p className="text-[10px] text-primary/80 uppercase tracking-widest font-mono border border-primary/20 bg-primary/5 px-2 py-0.5 rounded">
-                       {n.source}
-                     </p>
-                     <p className="text-[10px] text-text-secondary font-mono">
-                       {new Date(n.publishedAt).toLocaleTimeString()}
-                     </p>
-                   </div>
-                   <a href={n.url} target="_blank" rel="noreferrer" className="text-sm font-medium text-white/90 group-hover:text-primary transition-colors leading-relaxed block">
-                     {n.title}
-                   </a>
-                 </motion.li>
-               ))}
-             </ul>
-          </div>
-        </div>
-      </section>
+            </span>
+          </SectionHeader>
 
-      {/* Analytics & Table Row */}
-      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        
-        {/* Trend Chart (Placeholder for ECharts) */}
-        <div className="rounded-2xl border border-border bg-bg-card/50 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] p-6 min-h-[300px] flex flex-col">
-          <h2 className="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,97,255,0.8)]"></span>
-            Outbreak Trends (30 Days)
-          </h2>
-          <div className="flex-1 w-full h-full relative">
-            <TrendChart />
+          <div className="flex-1 overflow-y-auto divide-y divide-white/[0.04] max-h-[360px]">
+            {recentNews.length === 0 ? (
+              <div className="p-8 text-center text-text-muted text-sm">No recent intelligence</div>
+            ) : recentNews.map((n, i) => (
+              <motion.a
+                key={i}
+                href={n.url}
+                target="_blank"
+                rel="noreferrer"
+                custom={i}
+                initial="hidden"
+                animate="show"
+                variants={fadeUp}
+                className="block px-5 py-4 hover:bg-white/[0.02] transition-colors group"
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/50 border border-white/10 bg-white/[0.03] px-2 py-0.5 rounded-lg truncate max-w-[70%]">
+                    {n.source}
+                  </span>
+                  <span suppressHydrationWarning className="text-[10px] text-text-muted font-mono shrink-0">
+                    {new Date(n.publishedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary group-hover:text-white transition-colors leading-relaxed line-clamp-2">
+                  {n.title}
+                </p>
+              </motion.a>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Hotspots Table */}
-        <div className="rounded-2xl border border-border bg-bg-card/50 backdrop-blur-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-          <div className="px-6 py-4 border-b border-border/50 bg-bg-secondary/50">
-            <h2 className="text-sm font-bold text-warning uppercase tracking-widest flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-warning shadow-[0_0_8px_rgba(255,181,71,0.8)]"></span>
+        {/* Severity Index */}
+        <motion.div
+          className="rounded-2xl glass-card border border-white/[0.07] overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <SectionHeader>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning" />
               Severity Index
-            </h2>
+            </span>
+          </SectionHeader>
+          <div className="divide-y divide-white/[0.04] overflow-y-auto max-h-[360px]">
+            {topCountries.length === 0 ? (
+              <div className="p-8 text-center text-text-muted text-sm">No outbreak data</div>
+            ) : topCountries.map((c, i) => {
+              const cfr = c.cases > 0 ? ((c.deaths / c.cases) * 100).toFixed(1) : '—';
+              return (
+                <div key={i} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/[0.02] transition-colors">
+                  <span className="text-text-muted font-mono text-xs w-4 shrink-0">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm font-medium truncate">{c.country}</p>
+                    <p className="text-text-muted font-mono text-[10px]">{c.code}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span suppressHydrationWarning className="text-warning font-bold font-mono text-xs">{c.cases.toLocaleString()}</span>
+                    <span suppressHydrationWarning className="text-danger font-bold font-mono text-xs">{c.deaths.toLocaleString()}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-[10px] text-text-secondary uppercase tracking-widest bg-bg-primary/50 border-b border-border/50">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Region</th>
-                  <th className="px-6 py-4 font-medium">Code</th>
-                  <th className="px-6 py-4 font-medium text-right">Confirmed</th>
-                  <th className="px-6 py-4 font-medium text-right">Fatalities</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {data?.topCountries.map((c, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 font-medium text-white">{c.country}</td>
-                    <td className="px-6 py-4 text-text-secondary font-mono">{c.code}</td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-warning font-mono font-medium bg-warning/10 px-2 py-1 rounded">{c.cases.toLocaleString()}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-danger font-mono font-medium bg-danger/10 px-2 py-1 rounded">{c.deaths.toLocaleString()}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
+        </motion.div>
       </section>
     </div>
   );

@@ -1,16 +1,8 @@
-import { apiClient, ApiResponse } from '../utils/api';
+import { apiClient } from '@/utils/api';
+import type { ApiResponse } from '@/types/api';
+import type { NewsItem } from '@/types';
 
-export interface NewsArticle {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  severity: string | null;
-  publishedAt: string;
-  source: { name: string; reliabilityScore: number };
-}
-
-export const fetchNews = async (page = 1, limit = 20): Promise<ApiResponse<NewsArticle[]>> => {
-  const { data } = await apiClient.get<ApiResponse<NewsArticle[]>>(`/news?page=${page}&limit=${limit}`);
-  return data;
+export const fetchNews = async (): Promise<NewsItem[]> => {
+  const { data } = await apiClient.get<ApiResponse<NewsItem[]>>('/news');
+  return data.data;
 };

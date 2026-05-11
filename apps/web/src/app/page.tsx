@@ -3,6 +3,7 @@
 import { useDashboard } from '@/hooks/useDashboard';
 import { GlobalMetricsCard } from '@/components/GlobalMetricsCard';
 import { OutbreakMap } from '@/components/OutbreakMap';
+import { TrendChart } from '@/components/TrendChart';
 import { useSocket } from '@/providers/SocketProvider';
 import { motion } from 'framer-motion';
 
@@ -126,8 +127,8 @@ export default function Dashboard() {
             <span className="h-2 w-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(123,97,255,0.8)]"></span>
             Outbreak Trends (30 Days)
           </h2>
-          <div className="flex-1 border border-border border-dashed rounded-lg flex items-center justify-center text-text-secondary text-sm font-mono tracking-widest">
-            [ECHARTS TREND LINE RENDERER]
+          <div className="flex-1 w-full h-full relative">
+            <TrendChart />
           </div>
         </div>
 

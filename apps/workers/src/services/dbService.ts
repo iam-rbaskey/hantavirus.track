@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@hanta/db';
+import { prisma } from '@hanta/db';
 import { logger } from '../logging/logger';
 
 export class DbService {
@@ -30,7 +30,7 @@ export class DbService {
   }
 
   public async upsertCountryAndOutbreak(countryData: any, outbreakData: any) {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx: any) => {
       // 1. Ensure Country exists
       await tx.country.upsert({
         where: { code: countryData.code },

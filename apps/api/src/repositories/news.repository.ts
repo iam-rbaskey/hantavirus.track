@@ -1,9 +1,8 @@
 import { prisma } from '@hanta/db';
-import type { Prisma } from '@prisma/client';
 
 export class NewsRepository {
   public async getNews(skip: number, take: number, severity?: string, sourceId?: string) {
-    const where: Prisma.NewsWhereInput = {};
+    const where: any = {};
     if (severity) where.severity = severity;
     if (sourceId) where.sourceId = sourceId;
 

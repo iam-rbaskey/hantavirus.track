@@ -1,9 +1,8 @@
 import { prisma } from '@hanta/db';
-import type { Prisma } from '@prisma/client';
 
 export class TimelineRepository {
   public async getTimeline(skip: number, take: number) {
-    const where: Prisma.TimelineEventWhereInput = {};
+    const where: any = {};
 
     const [total, data] = await Promise.all([
       prisma.timelineEvent.count({ where }),
